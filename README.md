@@ -34,7 +34,7 @@ Coming soon...
 Coming soon...
 
 ## 👤 Author
-[bindiya Rathod] - .NET Developer
+[Bindiya Rathod] - .NET Developer
 
 ## 📅 Development Timeline
-Started: [Today's Date]
+Started: [21-1-2026]
