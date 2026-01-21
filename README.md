@@ -34,7 +34,7 @@ Coming soon...
 Coming soon...
 
 ## 👤 Author
-[Your Name] - .NET Developer
+[bindiya Rathod] - .NET Developer
 
 ## 📅 Development Timeline
 Started: [Today's Date]
