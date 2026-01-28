@@ -30,12 +30,22 @@ namespace WorkFlow.Application.DTOs
         public string Password { get; set; } = string.Empty;
     }
 
-    // Response after successful registration/login (no changes)
+    // Response after successful registration/login
     public class UserResponseDto
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public DateTime CreatedDate { get; set; }
+    }
+
+    //Response for login with JWT token
+    public class LoginResponseDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Token { get; set; } = string.Empty;
+        public DateTime ExpiresAt { get; set; }
     }
 }

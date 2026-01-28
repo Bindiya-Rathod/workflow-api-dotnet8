@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using WorkFlow.Application.DTOs;
 using WorkFlow.Domain.Entities;
 using WorkFlow.Domain.Interfaces.Repositories;
@@ -7,39 +8,46 @@ namespace WorkFlow.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class TasksController : ControllerBase
     {
         private readonly ITaskRepository _taskRepository;
-        private readonly IUserRepository _userRepository;
 
-        public TasksController(ITaskRepository taskRepository, IUserRepository userRepository)
+        public TasksController(ITaskRepository taskRepository)
         {
             _taskRepository = taskRepository;
-            _userRepository = userRepository;
         }
-        /// <summary>
-        /// GET : api/tasks
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet]
-        public async Task<ActionResult<ApiResponse<IEnumerable<TaskResponseDto>>>> GetAllTasks()
+
+        // Helper method to get current user ID from JWT token
+        private int GetCurrentUserId()
         {
-            var tasks = await _taskRepository.GetAllAsync();
-            var taskDtos = tasks.Select(t => new TaskResponseDto { 
-            Id = t.Id,
-            Title = t.Title,
-            Description = t.Description,
-            Status = t.Status,
-            Priority = t.Priority,
-            DueDate = t.DueDate,
-            CreatedDate = t.CreatedDate,
-            UpdatedDate = t.UpdatedDate,
-            UserId = t.UserId
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            return int.Parse(userIdClaim ?? "0");
+        }
+
+        // GET: api/tasks (Get tasks for current user only)
+        [HttpGet]
+        public async Task<ActionResult<ApiResponse<IEnumerable<TaskResponseDto>>>> GetMyTasks()
+        {
+            var currentUserId = GetCurrentUserId();
+            var tasks = await _taskRepository.GetTasksByUserIdAsync(currentUserId);
+
+            var taskDtos = tasks.Select(t => new TaskResponseDto
+            {
+                Id = t.Id,
+                Title = t.Title,
+                Description = t.Description,
+                Status = t.Status,
+                Priority = t.Priority,
+                DueDate = t.DueDate,
+                CreatedDate = t.CreatedDate,
+                UpdatedDate = t.UpdatedDate,
+                UserId = t.UserId
             }).ToList();
 
             return Ok(ApiResponse<IEnumerable<TaskResponseDto>>.SuccessResponse(taskDtos, "Task retrieved successfully"));
         }
-        
+
         /// <summary>
         /// GET: api/tasks/{id}
         /// </summary>
@@ -48,11 +56,18 @@ namespace WorkFlow.API.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<ApiResponse<TaskResponseDto>>> GetTaskById(int id)
         {
+            var currentUserId = GetCurrentUserId();
             var task = await _taskRepository.GetByIdAsync(id);
 
             if (task == null)
             {
                 return NotFound(ApiResponse<TaskResponseDto>.FailureResponse("Task not found"));
+            }
+
+            // Ensure user can only access their own tasks
+            if (task.UserId != currentUserId)
+            {
+                return Forbid();
             }
 
             var taskDto = new TaskResponseDto
@@ -74,15 +89,7 @@ namespace WorkFlow.API.Controllers
         [HttpPost]
         public async Task<ActionResult<ApiResponse<TaskResponseDto>>> CreateTask([FromBody] CreateTaskDto createTaskDto)
         {
-            // For now, hardcode userId = 1 (we'll use JWT authentication tomorrow)
-            int currentUserId = 1;
-
-            // Check if user exists
-            var userExists = await _userRepository.ExistsAsync(currentUserId);
-            if (!userExists)
-            {
-                return BadRequest(ApiResponse<TaskResponseDto>.FailureResponse("User not found. Please create a user first."));
-            }
+            var currentUserId = GetCurrentUserId();
 
             var task = new TaskItem
             {
@@ -118,11 +125,18 @@ namespace WorkFlow.API.Controllers
         [HttpPut("{id}")]
         public async Task<ActionResult<ApiResponse<TaskResponseDto>>> UpdateTask(int id, [FromBody] UpdateTaskDto updateTaskDto)
         {
+            var currentUserId = GetCurrentUserId();
             var task = await _taskRepository.GetByIdAsync(id);
 
             if (task == null)
             {
                 return NotFound(ApiResponse<TaskResponseDto>.FailureResponse("Task not found"));
+            }
+
+            // Ensure user can only update their own tasks
+            if (task.UserId != currentUserId)
+            {
+                return Forbid();
             }
 
             // Update task properties
@@ -155,6 +169,7 @@ namespace WorkFlow.API.Controllers
         [HttpDelete("{id}")]
         public async Task<ActionResult<ApiResponse<object>>> DeleteTask(int id)
         {
+            var currentUserId = GetCurrentUserId();
             var task = await _taskRepository.GetByIdAsync(id);
 
             if (task == null)
@@ -162,31 +177,15 @@ namespace WorkFlow.API.Controllers
                 return NotFound(ApiResponse<object>.FailureResponse("Task not found"));
             }
 
+            // Ensure user can only delete their own tasks
+            if (task.UserId != currentUserId)
+            {
+                return Forbid();
+            }
+
             await _taskRepository.DeleteAsync(task);
 
             return Ok(ApiResponse<object>.SuccessResponse(null, "Task deleted successfully"));
-        }
-
-        // GET: api/tasks/user/5
-        [HttpGet("user/{userId}")]
-        public async Task<ActionResult<ApiResponse<IEnumerable<TaskResponseDto>>>> GetTasksByUserId(int userId)
-        {
-            var tasks = await _taskRepository.GetTasksByUserIdAsync(userId);
-
-            var taskDtos = tasks.Select(t => new TaskResponseDto
-            {
-                Id = t.Id,
-                Title = t.Title,
-                Description = t.Description,
-                Status = t.Status,
-                Priority = t.Priority,
-                DueDate = t.DueDate,
-                CreatedDate = t.CreatedDate,
-                UpdatedDate = t.UpdatedDate,
-                UserId = t.UserId
-            }).ToList();
-
-            return Ok(ApiResponse<IEnumerable<TaskResponseDto>>.SuccessResponse(taskDtos, $"Tasks for user {userId} retrieved successfully"));
         }
     }
 }
