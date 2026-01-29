@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using WorkFlow.API.Middleware;
 using WorkFlow.Application.Services;
 using WorkFlow.Application.Settings;
 using WorkFlow.Domain.Interfaces.Repositories;
@@ -55,8 +56,24 @@ builder.Services.AddEndpointsApiExplorer();
 // Configure Swagger to support JWT
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "WorkFlow API", Version = "v1" });
-
+    c.SwaggerDoc("v1", new OpenApiInfo 
+    {
+        Title = "WorkFlow API",
+        Version = "v1" ,
+        Description = "A professional Task Management API built with .NET 8",
+        Contact = new OpenApiContact
+        {
+            Name = "Bindiya Rathod",
+            Email = "bindiya@rathod.com"
+        }
+    });
+    // Enable XML comments
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        c.IncludeXmlComments(xmlPath);
+    }
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token in the text input below.",
@@ -81,8 +98,21 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
-
+// Add CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngularApp",
+        builder =>
+        {
+            builder.WithOrigins("http://localhost:4200")
+                   .AllowAnyHeader()
+                   .AllowAnyMethod()
+                   .AllowCredentials();
+        });
+});
 var app = builder.Build();
+
+app.UseMiddleware<ExceptionMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -92,7 +122,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
+app.UseCors("AllowAngularApp");
 app.UseAuthentication();
 app.UseAuthorization();
 

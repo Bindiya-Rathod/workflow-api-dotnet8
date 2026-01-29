@@ -17,15 +17,23 @@ namespace WorkFlow.API.Controllers
         {
             _taskRepository = taskRepository;
         }
-
-        // Helper method to get current user ID from JWT token
+        
+        /// <summary>
+        /// Helper method to get current user ID from JWT token 
+        /// </summary>
+        /// <returns></returns>
         private int GetCurrentUserId()
         {
             var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             return int.Parse(userIdClaim ?? "0");
         }
 
-        // GET: api/tasks (Get tasks for current user only)
+        /// <summary>
+        /// Gets all tasks for the authenticated user
+        /// </summary>
+        /// <returns>List of tasks</returns>
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<TaskResponseDto>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [HttpGet]
         public async Task<ActionResult<ApiResponse<IEnumerable<TaskResponseDto>>>> GetMyTasks()
         {
@@ -49,10 +57,13 @@ namespace WorkFlow.API.Controllers
         }
 
         /// <summary>
-        /// GET: api/tasks/{id}
+        /// Gets a specific task by ID
         /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
+        /// <param name="id">Task ID</param>
+        /// <returns>Task details</returns>
+        [ProducesResponseType(typeof(ApiResponse<TaskResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [HttpGet("{id}")]
         public async Task<ActionResult<ApiResponse<TaskResponseDto>>> GetTaskById(int id)
         {
@@ -85,7 +96,17 @@ namespace WorkFlow.API.Controllers
 
             return Ok(ApiResponse<TaskResponseDto>.SuccessResponse(taskDto, "Task retrieved successfully"));
         }
+
+
         // POST: api/tasks
+        /// <summary>
+        /// Create task for user
+        /// </summary>
+        /// <param name="createTaskDto">CreateTaskDto</param>
+        /// <returns>Created task</returns>
+        [ProducesResponseType(typeof(ApiResponse<TaskResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [HttpPost]
         public async Task<ActionResult<ApiResponse<TaskResponseDto>>> CreateTask([FromBody] CreateTaskDto createTaskDto)
         {
@@ -121,7 +142,15 @@ namespace WorkFlow.API.Controllers
                 ApiResponse<TaskResponseDto>.SuccessResponse(taskDto, "Task created successfully"));
         }
 
-        // PUT: api/tasks/5
+        /// <summary>
+        /// Update task for user
+        /// </summary>
+        /// <param name="id">Task ID</param>
+        /// <param name="updateTaskDto">UpdateTaskDto</param>
+        /// <returns>Updated task</returns>
+        [ProducesResponseType(typeof(ApiResponse<TaskResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [HttpPut("{id}")]
         public async Task<ActionResult<ApiResponse<TaskResponseDto>>> UpdateTask(int id, [FromBody] UpdateTaskDto updateTaskDto)
         {
@@ -165,7 +194,11 @@ namespace WorkFlow.API.Controllers
             return Ok(ApiResponse<TaskResponseDto>.SuccessResponse(taskDto, "Task updated successfully"));
         }
 
-        // DELETE: api/tasks/5
+        /// <summary>
+        /// Delete task with TaskID
+        /// </summary>
+        /// <param name="id">Task ID</param>
+        /// <returns></returns>
         [HttpDelete("{id}")]
         public async Task<ActionResult<ApiResponse<object>>> DeleteTask(int id)
         {

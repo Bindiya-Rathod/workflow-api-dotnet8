@@ -23,6 +23,11 @@ namespace WorkFlow.API.Controllers
             _jwtSettings = jwtSettings.Value;
         }
 
+        /// <summary>
+        /// Register User
+        /// </summary>
+        /// <param name="registerDto"></param>
+        /// <returns></returns>
         [HttpPost("register")]
         public async Task<ActionResult<ApiResponse<UserResponseDto>>> Register([FromBody] RegisterUserDto registerDto)
         {
@@ -54,6 +59,12 @@ namespace WorkFlow.API.Controllers
 
             return CreatedAtAction(nameof(GetProfile), new { }, ApiResponse<UserResponseDto>.SuccessResponse(userDto,"User registered successful"));
         }
+        
+        /// <summary>
+        /// User Login
+        /// </summary>
+        /// <param name="loginDto"></param>
+        /// <returns></returns>
         [HttpPost("login")]
         public async Task<ActionResult<ApiResponse<LoginResponseDto>>> Login([FromBody] LoginDto loginDto)
         {
@@ -83,6 +94,11 @@ namespace WorkFlow.API.Controllers
 
             return Ok(ApiResponse<LoginResponseDto>.SuccessResponse(loginResponse, "Login successful"));
         }
+        
+        /// <summary>
+        /// Get user profile with claim token
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("profile")]
         [Microsoft.AspNetCore.Authorization.Authorize]
         public async Task<ActionResult<ApiResponse<UserResponseDto>>> GetProfile()
